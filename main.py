@@ -1,11 +1,15 @@
 """
-국내 주식 실시간 검색 순위 텔레그램 봇 (다중 소스 폴백 버전)
+국내 주식 실시간 검색 순위 텔레그램 봇 (다중 소스 폴백 + Groq AI 요약 버전)
 
 수집 우선순위
-  1) 네이버 금융 '검색상위 종목' (진짜 실시간 검색어 순위, TOP 30 중 20개 사용)
-  2) 다음 금융 '실시간 검색 순위' (JSON API, 최대 10개)
+  1) 네이버 금융 '검색상위 종목' (실시간 검색어 순위, TOP 20)
+  2) 다음 금융 '실시간 검색 순위' (JSON API, TOP 20)
   3) 네이버 모바일 증권 시가총액 상위 (대체 데이터)
   4) FinanceDataReader 시가총액 상위 (최후의 대체 데이터)
+
+AI 요약
+  - GROQ_API_KEY가 설정된 경우 Groq API(OpenAI 호환 엔드포인트)로 상위 종목 흐름 요약
+  - 키가 없거나 API 오류가 발생해도 순위 텔레그램 발송은 계속 진행
 
 앞 소스가 실패하면 자동으로 다음 소스로 넘어가고,
 전부 실패하면 '왜 실패했는지'를 텔레그램으로 알려줍니다.
@@ -24,9 +28,15 @@ from bs4 import BeautifulSoup
 KST = timezone(timedelta(hours=9))
 TOP_N = 20
 
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+TELEGRAM_BOT_TOKEN = (
+    (os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN") or "").strip()
+)
+TELEGRAM_CHAT_ID = (os.environ.get("TELEGRAM_CHAT_ID") or "").strip()
+GROQ_API_KEY = (os.environ.get("GROQ_API_KEY") or "").strip()
+GROQ_MODEL = (os.environ.get("GROQ_MODEL") or "llama-3.3-70b-versatile").strip()
 FORCE_RUN = os.environ.get("FORCE_RUN") == "1"  # 수동 실행 시 운영시간 검사 무시
+
+GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 HEADERS = {
     "User-Agent": (
@@ -244,8 +254,83 @@ def collect():
     return [], None, False, errors
 
 
+# ───────────────────────── Groq AI 요약 ─────────────────────────
+def format_items_for_prompt(items, label, is_search, now_str):
+    kind = "실시간 검색 순위" if is_search else "시가총액 상위"
+    rows = []
+    for it in items[:TOP_N]:
+        extra_part = f" ({it['extra']})" if it.get("extra") else ""
+        rows.append(
+            f"{it['rank']}. {it['name']}({it['code']}) | 현재가: {it['price']}원 | "
+            f"등락률: {it['rate']}{extra_part}"
+        )
+    return (
+        f"기준시각: {now_str} KST\n"
+        f"데이터 구분: {kind} ({label})\n"
+        f"종목 목록:\n" + "\n".join(rows)
+    )
+
+
+def analyze_with_groq(items, label, is_search, now_str):
+    """Groq API로 상위 종목 흐름 요약. 실패 시 None 반환."""
+    if not GROQ_API_KEY:
+        print("ℹ️ GROQ_API_KEY가 없어 AI 요약을 건너뜁니다.")
+        return None
+
+    prompt_text = format_items_for_prompt(items, label, is_search, now_str)
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "당신은 한국 주식 시장(코스피/코스닥) 요약 도우미입니다. "
+                    "제공된 종목 목록과 등락률만 근거로 주요 움직임과 특징을 한국어 3~4줄로 간결하게 요약하세요. "
+                    "확정되지 않은 호재·매수/매도 추천·근거 없는 추측은 하지 마세요."
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt_text,
+            },
+        ],
+        "temperature": 0.3,
+        "max_tokens": 400,
+    }
+
+    last_err = None
+    for attempt in range(2):
+        try:
+            r = requests.post(GROQ_CHAT_URL, json=payload, headers=headers, timeout=20)
+            if r.status_code == 429 and attempt == 0:
+                print("⚠️ Groq 429(요청 한도) 감지, 3초 후 1회 재시도합니다.")
+                time.sleep(3)
+                continue
+            r.raise_for_status()
+            data = r.json()
+            choices = data.get("choices") or []
+            if not choices:
+                raise ValueError("Groq 응답 choices가 비어 있음")
+            content = ((choices[0].get("message") or {}).get("content") or "").strip()
+            if not content:
+                raise ValueError("Groq 응답 content가 비어 있음")
+            print(f"✅ Groq 요약 성공 ({GROQ_MODEL})")
+            return content
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {str(e)[:140]}"
+            if attempt == 0:
+                time.sleep(2)
+
+    print(f"⚠️ Groq 요약 실패(순위는 정상 발송): {last_err}")
+    return None
+
+
 # ───────────────────────── 메시지/저장 ─────────────────────────
-def build_message(items, label, is_search, errors, now_str):
+def build_message(items, label, is_search, errors, now_str, ai_summary=None):
     title = "실시간 검색 순위 TOP" if is_search else "시가총액 상위 TOP"
     lines = [
         f"📈 <b>국내 증시 {title} {len(items)}</b>",
@@ -255,14 +340,24 @@ def build_message(items, label, is_search, errors, now_str):
     ]
     for it in items:
         name = html.escape(str(it["name"]))
-        link = f"https://finance.naver.com/item/main.naver?code={it['code']}"
+        code = html.escape(str(it["code"]))
+        price = html.escape(str(it["price"]))
+        rate = html.escape(str(it["rate"]))
+        link = f"https://finance.naver.com/item/main.naver?code={code}"
         line = (
             f"<b>{it['rank']}</b>. <a href='{link}'>{name}</a> "
-            f"{it['price']}원 {rate_icon(it['rate'])}{it['rate']}"
+            f"{price}원 {rate_icon(it['rate'])}{rate}"
         )
         if it.get("extra"):
             line += f" · {html.escape(it['extra'])}"
         lines.append(line)
+
+    if ai_summary:
+        lines += [
+            "",
+            f"🤖 <b>Groq AI 요약 ({html.escape(GROQ_MODEL)})</b>",
+            html.escape(ai_summary),
+        ]
 
     if not is_search:
         lines += ["", "⚠️ 검색 순위 소스가 모두 실패해 대체 데이터(시가총액)를 보냈습니다."]
@@ -272,12 +367,20 @@ def build_message(items, label, is_search, errors, now_str):
     return "\n".join(lines)
 
 
-def save_json(items, label, errors, now_str):
+def save_json(items, label, errors, now_str, ai_summary=None):
     os.makedirs("data", exist_ok=True)
     with open("data/ranking.json", "w", encoding="utf-8") as f:
         json.dump(
-            {"updated_at": now_str, "source": label, "errors": errors, "items": items},
-            f, ensure_ascii=False, indent=2,
+            {
+                "updated_at": now_str,
+                "source": label,
+                "ai_summary": ai_summary,
+                "errors": errors,
+                "items": items,
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
         )
 
 
@@ -296,8 +399,11 @@ def main():
         print("❌ 모든 소스 실패")
         sys.exit(1)
 
-    save_json(items, label, errors, now_str)
-    ok = send_telegram_msg(build_message(items, label, is_search, errors, now_str))
+    ai_summary = analyze_with_groq(items, label, is_search, now_str)
+    save_json(items, label, errors, now_str, ai_summary=ai_summary)
+    ok = send_telegram_msg(
+        build_message(items, label, is_search, errors, now_str, ai_summary=ai_summary)
+    )
     print("✅ 텔레그램 발송 성공" if ok else "❌ 텔레그램 발송 실패")
     if not ok:
         sys.exit(1)
