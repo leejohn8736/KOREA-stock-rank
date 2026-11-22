@@ -1,9 +1,10 @@
 {
-  "updated_at": "2026-11-21 19:45:50",
-  "source": "다음 금융 실시간 검색 순위",
+  "updated_at": "2026-11-22 10:02:25",
+  "source": "네이버 시가총액 상위(대체)",
   "ai_summary": null,
   "errors": {
-    "naver_search": "ValueError: 검색상위 테이블을 찾지 못함(페이지 구조 변경 또는 차단 페이지)"
+    "naver_search": "ValueError: 검색상위 테이블을 찾지 못함(페이지 구조 변경 또는 차단 페이지)",
+    "daum_search": "ConnectTimeout: HTTPSConnectionPool(host='finance.daum.net', port=443): Max retries exceeded with url: /api/search/ranks?limit=20 (Cause"
   },
   "items": [
     {
@@ -24,126 +25,30 @@
     },
     {
       "rank": 3,
-      "name": "한화오션",
-      "code": "042660",
-      "price": "41,900",
-      "rate": "-6.89%",
+      "name": "삼성전자우",
+      "code": "005935",
+      "price": "142,400",
+      "rate": "-9.59%",
       "extra": ""
     },
     {
       "rank": 4,
-      "name": "SOL AI반도체TOP2플러스",
-      "code": "0167A0",
-      "price": "11,395",
-      "rate": "-8.99%",
+      "name": "SK스퀘어",
+      "code": "402340",
+      "price": "672,000",
+      "rate": "-9.07%",
       "extra": ""
     },
     {
       "rank": 5,
-      "name": "한화솔루션",
-      "code": "009830",
-      "price": "19,140",
-      "rate": "-7.98%",
+      "name": "LG에너지솔루션",
+      "code": "373220",
+      "price": "297,500",
+      "rate": "-1.49%",
       "extra": ""
     },
     {
       "rank": 6,
-      "name": "NAVER",
-      "code": "035420",
-      "price": "160,800",
-      "rate": "-4.46%",
-      "extra": ""
-    },
-    {
-      "rank": 7,
-      "name": "TIGER 배당커버드콜액티브",
-      "code": "472150",
-      "price": "13,635",
-      "rate": "-5.38%",
-      "extra": ""
-    },
-    {
-      "rank": 8,
-      "name": "PLUS SK하이닉스샌디스크채권혼합50",
-      "code": "0226A0",
-      "price": "8,115",
-      "rate": "-4.08%",
-      "extra": ""
-    },
-    {
-      "rank": 9,
-      "name": "뉴로핏",
-      "code": "380550",
-      "price": "4,550",
-      "rate": "-6.86%",
-      "extra": ""
-    },
-    {
-      "rank": 10,
-      "name": "RISE 200위클리커버드콜",
-      "code": "475720",
-      "price": "9,000",
-      "rate": "-4.26%",
-      "extra": ""
-    },
-    {
-      "rank": 11,
-      "name": "엑시콘",
-      "code": "092870",
-      "price": "49,950",
-      "rate": "-7.84%",
-      "extra": ""
-    },
-    {
-      "rank": 12,
-      "name": "삼성전기",
-      "code": "009150",
-      "price": "767,000",
-      "rate": "-13.33%",
-      "extra": ""
-    },
-    {
-      "rank": 13,
-      "name": "매드업",
-      "code": "0039P0",
-      "price": "6,850",
-      "rate": "-5.52%",
-      "extra": ""
-    },
-    {
-      "rank": 14,
-      "name": "SOL 팔란티어커버드콜OTM채권혼합",
-      "code": "0040Y0",
-      "price": "7,300",
-      "rate": "-1.48%",
-      "extra": ""
-    },
-    {
-      "rank": 15,
-      "name": "현대차",
-      "code": "005380",
-      "price": "253,000",
-      "rate": "-5.42%",
-      "extra": ""
-    },
-    {
-      "rank": 16,
-      "name": "PLUS 200위클리커버드콜채권혼합",
-      "code": "0203D0",
-      "price": "7,560",
-      "rate": "-2.58%",
-      "extra": ""
-    },
-    {
-      "rank": 17,
-      "name": "메디아나",
-      "code": "041920",
-      "price": "6,680",
-      "rate": "-5.78%",
-      "extra": ""
-    },
-    {
-      "rank": 18,
       "name": "삼성바이오로직스",
       "code": "207940",
       "price": "1,336,000",
@@ -151,7 +56,63 @@
       "extra": ""
     },
     {
-      "rank": 19,
+      "rank": 7,
+      "name": "삼성전기",
+      "code": "009150",
+      "price": "767,000",
+      "rate": "-13.33%",
+      "extra": ""
+    },
+    {
+      "rank": 8,
+      "name": "KB금융",
+      "code": "105560",
+      "price": "153,100",
+      "rate": "+0.13%",
+      "extra": ""
+    },
+    {
+      "rank": 9,
+      "name": "현대차",
+      "code": "005380",
+      "price": "253,000",
+      "rate": "-5.42%",
+      "extra": ""
+    },
+    {
+      "rank": 10,
+      "name": "셀트리온",
+      "code": "068270",
+      "price": "212,500",
+      "rate": "-1.16%",
+      "extra": ""
+    },
+    {
+      "rank": 11,
+      "name": "삼성생명",
+      "code": "032830",
+      "price": "237,500",
+      "rate": "-7.05%",
+      "extra": ""
+    },
+    {
+      "rank": 12,
+      "name": "삼성물산",
+      "code": "028260",
+      "price": "255,500",
+      "rate": "-6.24%",
+      "extra": ""
+    },
+    {
+      "rank": 13,
+      "name": "신한지주",
+      "code": "055550",
+      "price": "86,300",
+      "rate": "+0.82%",
+      "extra": ""
+    },
+    {
+      "rank": 14,
       "name": "기아",
       "code": "000270",
       "price": "87,400",
@@ -159,11 +120,51 @@
       "extra": ""
     },
     {
-      "rank": 20,
+      "rank": 15,
+      "name": "하나금융지주",
+      "code": "086790",
+      "price": "124,200",
+      "rate": "+0.24%",
+      "extra": ""
+    },
+    {
+      "rank": 16,
+      "name": "SK",
+      "code": "034730",
+      "price": "456,500",
+      "rate": "-7.50%",
+      "extra": ""
+    },
+    {
+      "rank": 17,
       "name": "삼성SDI",
       "code": "006400",
       "price": "398,500",
       "rate": "-7.00%",
+      "extra": ""
+    },
+    {
+      "rank": 18,
+      "name": "한화에어로스페이스",
+      "code": "012450",
+      "price": "603,000",
+      "rate": "-4.44%",
+      "extra": ""
+    },
+    {
+      "rank": 19,
+      "name": "현대모비스",
+      "code": "012330",
+      "price": "322,000",
+      "rate": "-5.71%",
+      "extra": ""
+    },
+    {
+      "rank": 20,
+      "name": "HD현대중공업",
+      "code": "329180",
+      "price": "247,000",
+      "rate": "-5.54%",
       "extra": ""
     }
   ]
